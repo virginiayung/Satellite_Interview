@@ -11,7 +11,8 @@ def Brovey(weight, rgb, pan, color_meta, pan_meta, dest, wind):
     panchromatic pixel intensity to the sum of all the 
     multispectral intensities.
     """
-
+    print rgb.shape
+    print pan.shape
     weight = float(weight)
     for i, c in enumerate(rgb):
         x = np.empty(pan.shape)
@@ -70,6 +71,7 @@ def Brovey_ACRGB(weight, rgb, pan, color_meta, pan_meta, dest, wind):
     print avg_rgb.shape
 
     count = 0
+
     avg_pan = np.empty((pan.shape[0]/2, pan.shape[1]/2))
 
     for i in xrange(pan.shape[0]-1):

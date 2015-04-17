@@ -9,7 +9,7 @@ from PIL import Image
 import time
 from Pipeline_CommonFunctions import clean_file_lst
 from Brovey_Methods import Brovey, Brovey_ACRGB
-# from Other_Methods import Wavelet, PXS
+from Other_Methods import Wavelet, PXS
 
 blocksize=2048
      
@@ -174,23 +174,36 @@ class Pan_Sharpening(object):
             elif 'b4' in img_file.lower():
                 red = os.path.join(self.subdir_path,img_file)
             elif 'b8' in img_file.lower() and 'down' not in img_file.lower():
-                pan = os.path.join(self.subdir_path,img_file)
+                pan = os.path.join(self.subdir_path,img_file)    
             elif 'l8sr' in img_file.lower():
+                # if l8sr is RGB file, unstack into 3 separate bands
                 l8sr = os.path.join(self.subdir_path,img_file)
                 with rio.open(l8sr, 'r') as src:
                     rl8, gl8, bl8 = src.read((1, 2, 3))
+                kwargs = src.meta
+                kwargs.update(count=1)
+                b2 = os.path.join(self.subdir_path,'l8sr_b2.tif')
+                b3 = os.path.join(self.subdir_path,'l8sr_b3.tif')
+                b4 = os.path.join(self.subdir_path,'l8sr_b4.tif')
 
-        # if 'l8sr' in img_file.lower():
-        #     r, g, b= rl8, gl8, bl8
-        #     p = rio.open(pan)
-        #     color_meta = src.meta
-        else:
-            r, g, b, p = (rio.open(f) for f in [red, green, blue, pan])
-            color_meta = b.meta
+                with rio.open(b2, 'w',**kwargs) as dst:
+                    dst.write_band(1, bl8)
+                blue = b2
+                with rio.open(b3, 'w',**kwargs) as dst:
+                    dst.write_band(1, gl8)
+                green = b3
+                with rio.open(b4, 'w',**kwargs) as dst:
+                    dst.write_band(1, rl8)
+                red = b4
+
+
+
+        r, g, b, p = (rio.open(f) for f in [red, green, blue, pan])
+        color_meta = b.meta
         rgb_o = (r, g, b)
 
-        
         pan_meta = p.meta
+        print pan_meta
         w, h = pan_meta['width'], pan_meta['height']
         print "pan image width: %f, pan image height: %f" %(w, h)
         pan_meta.update(photometric='rgb', count=3)
@@ -219,9 +232,13 @@ class Pan_Sharpening(object):
                 
                 elif self.pan_sharp_method == 'Brovey_ACRGB':
                     print '=============== Constructing adjusted pan ==============='
-                    adjusted_pan= self.brovey_ACRGB(opt_weight,rgb, pan, color_meta, pan_meta, dest, wind)
+                    adjusted_pan_output = os.path.join(self.dir_path, 'output_adj_pan.tif')
+                    pan_meta2=p.meta 
+                    with rio.open(adjusted_pan_output, 'w', **pan_meta2) as dest2:
+                        weight = 1
+                        adjusted_pan= self.brovey_ACRGB(weight,rgb, pan, color_meta, pan_meta2, dest2, wind)
                     print '=============== Brovey on corrected RGB and adjusted pan ==============='
-                    output_img, ratio=self.brovey(opt_weight, rgb, adjusted_pan, color_meta, pan_meta, dest, wind)
+                    output_img, ratio=self.brovey(weight, rgb, adjusted_pan, color_meta, pan_meta, dest, wind)
 
                 elif self.pan_sharp_method == 'PXS':
                     output_img= self.pxs(rgb, pan)
@@ -240,16 +257,16 @@ class Pan_Sharpening(object):
         print 'run_time: ', run_time
 
 
-        return sorted(dir_rmse, key=dir_rmse.get)
+        return output_img
 
 
 
 if __name__ == '__main__':
     # make changes to input so it takes in more than one image
     dir_path = '/Users/heymanhn/ENV/mapbox/pan_sharpening_img2/'
-    sub_dir_path = os.path.join(dir_path, 'I2')
+    sub_dir_path = os.path.join(dir_path, 'I3')
     output_img = dir_path + 'output_img'
-    fm = Pan_Sharpening(dir_path, sub_dir_path, range(20,70,1), 'Brovey_ACRGB', output_img)
+    fm = Pan_Sharpening(dir_path, sub_dir_path, range(20,23,1), 'Brovey_ACRGB', output_img)
         
-    directory_rmse = fm.main()
-    print 'sorted weights by ascending rmse: ',directory_rmse
+    output_img = fm.main()
+
