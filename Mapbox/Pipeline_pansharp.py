@@ -232,13 +232,19 @@ class Pan_Sharpening(object):
                 
                 elif self.pan_sharp_method == 'Brovey_ACRGB':
                     print '=============== Constructing adjusted pan ==============='
-                    adjusted_pan_output = os.path.join(self.dir_path, 'output_adj_pan.tif')
+                    adjusted_pan_output = os.path.join(self.subdir_path, 'output_adj_pan.tif')
                     pan_meta2=p.meta 
                     with rio.open(adjusted_pan_output, 'w', **pan_meta2) as dest2:
                         weight = 1
                         adjusted_pan= self.brovey_ACRGB(weight,rgb, pan, color_meta, pan_meta2, dest2, wind)
                     print '=============== Brovey on corrected RGB and adjusted pan ==============='
-                    output_img, ratio=self.brovey(weight, rgb, adjusted_pan, color_meta, pan_meta, dest, wind)
+                    p2 = rio.open(adjusted_pan_output)
+                    adj_pan = p2.read(1, window=wind).astype(matht)
+                    b3 = rio.open('I3/small_B3.TIF')
+                    color_meta = b3.meta
+                    print 'adjusted pan meta', p2.meta
+                    print 'rgb meta',color_meta
+                    output_img, ratio=self.brovey(weight, rgb, adj_pan, color_meta, pan_meta, dest, wind)
 
                 elif self.pan_sharp_method == 'PXS':
                     output_img= self.pxs(rgb, pan)
@@ -265,7 +271,7 @@ if __name__ == '__main__':
     # make changes to input so it takes in more than one image
     dir_path = '/Users/heymanhn/ENV/mapbox/pan_sharpening_img2/'
     sub_dir_path = os.path.join(dir_path, 'I3')
-    output_img = dir_path + 'output_img'
+    output_img = dir_path + 'output_img'+'Brovey_ACRGB'
     fm = Pan_Sharpening(dir_path, sub_dir_path, range(20,23,1), 'Brovey_ACRGB', output_img)
         
     output_img = fm.main()

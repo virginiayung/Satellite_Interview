@@ -11,8 +11,10 @@ def Brovey(weight, rgb, pan, color_meta, pan_meta, dest, wind):
     panchromatic pixel intensity to the sum of all the 
     multispectral intensities.
     """
-    print rgb.shape
+    print rgb[0].shape
     print pan.shape
+    print 'original pan meta',pan_meta
+    print 'color pan meta', color_meta
     weight = float(weight)
     for i, c in enumerate(rgb):
         x = np.empty(pan.shape)
